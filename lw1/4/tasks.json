@@ -1,0 +1,17 @@
+[
+  {
+    "question": "Любимый язык программирования?",
+    "word": "javascript",
+    "guessedLetters": "ilovejavascript"
+  },
+  {
+    "question": "Первое слово?",
+    "word": "mama",
+    "guessedLetters": "qwmaertyuiop"
+  },
+  {
+    "question": "Второе слово?",
+    "word": "папа",
+    "guessedLetters": "йцукеангшщзп"
+  }
+]

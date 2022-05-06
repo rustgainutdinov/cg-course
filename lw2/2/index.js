@@ -10,6 +10,7 @@ let pencilColor = "black", lineWidth = 5;
 function init() {
 	canvas = document.getElementById('can');
 	ctx = canvas.getContext("2d");
+	//TODO: картинка при открытии должна заменять, а не рисоваться сверху
 
 	canvas.addEventListener("mousemove", function (e) {
 		findxy('move', e)

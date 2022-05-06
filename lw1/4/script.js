@@ -102,6 +102,7 @@ function initEventListeners() {
 		if(GAME.currentTaskI === tasks.length - 1) {
 			alert('Вы победили');
 		} else {
+			//TODO: реация на повешивание и обраный разбор виселицы
 			GAME.currentTaskI++;
 			loadCurrentTask();
 		}

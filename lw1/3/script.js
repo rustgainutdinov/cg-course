@@ -13,6 +13,7 @@ const COLOR = "#FF0000";
 drawCircle(R, X1, Y1, COLOR);
 
 function drawCircle(r, x1, y1, color) {
+    //TODO: разобраться в алгоритме
     let x = 0
     let y = r
     let delta = 1 - 2 * r

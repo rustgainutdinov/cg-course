@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=utf-8>
+  <title>First Three.js app</title>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%
+    }
+  </style>
+</head>
+<body>
+<script src="src/three.js"></script>
+<script>
+	function drawLine(pointsData, scene) {
+		var material = new THREE.LineBasicMaterial({color: 0x0000ff});
+		const points = [];
+
+		for (let pointData of pointsData) {
+			points.push(new THREE.Vector3(...pointData));
+		}
+
+		const geometry = new THREE.BufferGeometry().setFromPoints(points);
+		var line = new THREE.Line(geometry, material);
+		scene.add(line);
+	}
+
+	var renderer = new THREE.WebGLRenderer();
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild(renderer.domElement);
+
+	var camera = new THREE.PerspectiveCamera(5, window.innerWidth / window.innerHeight, 1, 500);
+	camera.position.set(0, 0, 100);
+	camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+	var scene = new THREE.Scene();
+	//create a blue LineBasicMaterial (создадим синий LineBasicMaterial)
+
+	drawLine([[0, -4, 0], [0, 4, 0]], scene);
+	drawLine([[0.4, 3.6, 0], [0, 4, 0]], scene);
+	drawLine([[-0.4, 3.6, 0], [0, 4, 0]], scene);
+	drawLine([[0.4, -3.6, 0], [0, -4, 0]], scene);
+	drawLine([[-0.4, -3.6, 0], [0, -4, 0]], scene);
+
+	for (let x = -3.6; x < 4; x += 0.4) {
+		drawLine([[x, -0.2, 0], [x, 0.2, 0]], scene);
+		drawLine([[-0.2, x, 0], [0.2, x, 0]], scene);
+	}
+
+	drawLine([[-4, 0, 0], [4, 0, 0]], scene);
+	drawLine([[-4, 0, 0], [-3.6, 0.4, 0]], scene);
+	drawLine([[-4, 0, 0], [-3.6, -0.4, 0]], scene);
+	drawLine([[3.6, 0.4, 0], [4, 0, 0]], scene);
+	drawLine([[3.6, -0.4, 0], [4, 0, 0]], scene);
+
+	let prevPoint;
+	for (let x = -4; x <= 4; x += 0.01) {
+		if(!prevPoint) {
+			prevPoint = [x, 1 / x];
+			continue;
+		}
+		let point = [x, 1 / x];
+		if(x === 0) {
+			prevPoint = point;
+			continue;
+		}
+		drawLine([prevPoint, point], scene);
+		prevPoint = point;
+	}
+
+	renderer.render(scene, camera);
+
+</script>
+</body>
+</html>

@@ -133,3 +133,4 @@ function isPointInRect(rectX, rectY, rectW, rectH, x, y) {
 initEventListeners();
 makeTask();
 drawTask();
+//TODO: поправить кривое перетягивание и сделать нормальный просчет баллов, сделать сохранение пропорций картинок 

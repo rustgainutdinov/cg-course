@@ -1,70 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Krosh</title>
-  <style>
-    body {
-      margin: 0;
-    }
+    <meta charset="UTF-8">
+    <title>Krosh</title>
+    <style>
+        body {
+            margin: 0;
+        }
 
-    canvas {
-      width: 100%;
-      height: 100%
-    }
-  </style>
+        canvas {
+            width: 100%;
+            height: 100%
+        }
+    </style>
 </head>
 <body>
 <script src="src/three.js"></script>
 <script>
 
-	function drawCircle(r, c, x = 0, y = 0) {
-		var geometry = new THREE.CircleGeometry(r, 100);
-		var material = new THREE.MeshBasicMaterial({color: c});
-		var circle = new THREE.Mesh(geometry, material);
-		circle.position.set(x, y, 0);
-		scene.add(circle);
-	}
+    function drawCircle(r, c, x = 0, y = 0) {
+        var geometry = new THREE.CircleGeometry(r, 100);
+        var material = new THREE.MeshBasicMaterial({color: c});
+        var circle = new THREE.Mesh(geometry, material);
+        circle.position.set(x, y, 0);
+        scene.add(circle);
+    }
 
-	function drawEllipse(r, c, x = 0, y = 0) {
-		var geometry = new THREE.CircleGeometry(r, 100);
-		var material = new THREE.MeshBasicMaterial({color: c});
-		var circle = new THREE.Mesh(geometry, material);
-		circle.position.set(x, y, 0);
-		scene.add(circle);
-	}
+    function drawEllipse(x, y, w, h, rot, c) {
+        var path = new THREE.Shape();
+        path.absellipse(x, y, w, h, 0, Math.PI * 2, true, rot);
+        var geometry = new THREE.ShapeBufferGeometry(path);
+        var material = new THREE.MeshBasicMaterial({color: c});
+        var ellipse = new THREE.Mesh(geometry, material);
+        scene.add(ellipse);
+    }
 
-	var renderer = new THREE.WebGLRenderer();
-	renderer.setSize(window.innerWidth, window.innerHeight);
-	document.body.appendChild(renderer.domElement);
+    function drawRoundedRectangle(x, y, w, h, r, c, s) { // width, height, radius corner, smoothness
 
-	var camera = new THREE.PerspectiveCamera(10, window.innerWidth / window.innerHeight, 1, 500);
-	camera.position.set(0, 0, 100);
-	camera.lookAt(new THREE.Vector3(0, 0, 0));
+        // helper const's
+        const wi = w / 2 - r;		// inner width
+        const hi = h / 2 - r;		// inner height
+        const w2 = w / 2;			// half width
+        const h2 = h / 2;			// half height
+        const ul = r / w;			// u left
+        const ur = (w - r) / w;	// u right
+        const vl = r / h;			// v low
+        const vh = (h - r) / h;	// v high
 
-	var scene = new THREE.Scene();
-	//create a blue LineBasicMaterial (создадим синий LineBasicMaterial)
+        let positions = [
 
-	drawCircle(5.2, 0x964031);
-	drawCircle(5, 0xE36913);
+            wi, hi, 0, -wi, hi, 0, -wi, -hi, 0, wi, -hi, 0
 
-	drawCircle(1.9, 0x964031, -1.5, 2);
-	drawCircle(1.9, 0x964031, 1.5, 2);
+        ];
 
-	drawCircle(1.7, 0xFFFFFF, -1.5, 2);
-	drawCircle(1.7, 0xFFFFFF, 1.5, 2);
+        let uvs = [
 
-	drawCircle(0.6, 0x000000, -1, 1.5);
-	drawCircle(0.6, 0x000000, 1, 1.5);
+            ur, vh, ul, vh, ul, vl, ur, vl
 
-	var ellipse = new THREE.EllipseCurve(0, 0, 1, 5, 0, 2.0 * Math.PI, false);
-	const geometry = new THREE.BufferGeometry().setFromPoints( ellipse.getPoints(100) );
-	var material = new THREE.MeshBasicMaterial({color: 0xFFFFFF});
-	var line = new THREE.Line(geometry, material);
-	scene.add( line );
+        ];
 
+        let n = [
 
-	renderer.render(scene, camera);
+            3 * (s + 1) + 3, 3 * (s + 1) + 4, s + 4, s + 5,
+            2 * (s + 1) + 4, 2, 1, 2 * (s + 1) + 3,
+            3, 4 * (s + 1) + 3, 4, 0
+
+        ];
+
+        let indices = [
+
+            n[0], n[1], n[2], n[0], n[2], n[3],
+            n[4], n[5], n[6], n[4], n[6], n[7],
+            n[8], n[9], n[10], n[8], n[10], n[11]
+
+        ];
+
+        let phi, cos, sin, xc, yc, uc, vc, idx;
+
+        for (let i = 0; i < 4; i++) {
+
+            xc = i < 1 || i > 2 ? wi : -wi;
+            yc = i < 2 ? hi : -hi;
+
+            uc = i < 1 || i > 2 ? ur : ul;
+            vc = i < 2 ? vh : vl;
+
+            for (let j = 0; j <= s; j++) {
+
+                phi = Math.PI / 2 * (i + j / s);
+                cos = Math.cos(phi);
+                sin = Math.sin(phi);
+
+                positions.push(xc + r * cos, yc + r * sin, 0);
+
+                uvs.push(uc + ul * cos, vc + vl * sin);
+
+                if (j < s) {
+
+                    idx = (s + 1) * i + j + 4;
+                    indices.push(i, idx, idx + 1);
+
+                }
+
+            }
+
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+        geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
+
+        var material = new THREE.MeshBasicMaterial({color: c});
+        var rect = new THREE.Mesh(geometry, material);
+        rect.position.set(x, y, 0);
+        scene.add(rect);
+    }
+
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    var camera = new THREE.PerspectiveCamera(10, window.innerWidth / window.innerHeight, 1, 500);
+    camera.position.set(0, 0, 100);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+    var scene = new THREE.Scene();
+    //create a blue LineBasicMaterial (создадим синий LineBasicMaterial)
+
+    drawEllipse(-2, -5, 1.2, 2.3, -60, 0x964031);
+    drawEllipse(-2, -5, 1, 2, -60, 0xE36913);
+
+    drawEllipse(2, -5, 1.2, 2.3, 60, 0x964031);
+    drawEllipse(2, -5, 1, 2, 60, 0xE36913);
+
+    drawCircle(0.8, 0x964031, -2, 5);
+    drawCircle(0.8, 0x964031, 2, 5);
+    drawCircle(5.2, 0x964031);
+
+    drawCircle(5, 0xE36913);
+    drawCircle(0.6, 0xE36913, -2, 5);
+    drawCircle(0.6, 0xE36913, 2, 5);
+
+    drawCircle(2, 0x5E3527, 0, 0);
+    drawCircle(2.5, 0xE36913, 0, 0.8);
+
+    drawCircle(1.9, 0x964031, -1.5, 2);
+    drawCircle(1.9, 0x964031, 1.5, 2);
+
+    drawCircle(1.7, 0xFFFFFF, -1.5, 2);
+    drawCircle(1.7, 0xFFFFFF, 1.5, 2);
+
+    drawCircle(0.6, 0x000000, -1, 1.5);
+    drawCircle(0.6, 0x000000, 1, 1.5);
+
+    drawCircle(0.2, 0xffffff, -0.6, 1.7);
+    drawCircle(0.2, 0xffffff, 1.4, 1.7);
+
+    drawRoundedRectangle(0, -0.2, 3, 2, 1, 0x5E3527, 100);
+
+    drawEllipse(5.8, -1, 1.2, 2.3, 60, 0x964031);
+    drawEllipse(5.8, -1, 1, 2, 60, 0xE36913);
+
+    drawEllipse(-5.8, -1, 1.2, 2.3, -60, 0x964031);
+    drawEllipse(-5.8, -1, 1, 2, -60, 0xE36913);
+
+    renderer.render(scene, camera);
 
 </script>
 </body>

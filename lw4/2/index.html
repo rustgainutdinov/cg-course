@@ -33,7 +33,7 @@
 	new THREE.OrbitControls(camera, renderer.domElement);
 
 	const count = 1000;
-	const box = new THREE.BoxGeometry();
+	const box = new THREE.BoxGeometry();//TODO: для чего нужнен box и сделать ленту непрерывной, use TriangleStrip
 	const strip = new THREE.Object3D();
 	scene.add(strip);
 	for (let i = 0; i < count; i++) {
@@ -53,7 +53,7 @@
 		strip.add(o);
 	}
 
-	requestAnimationFrame(function render(t) {
+	requestAnimationFrame(function render() {
 		if(renderer.width !== innerWidth || renderer.height !== innerHeight) {
 			renderer.setSize(innerWidth, innerHeight);
 			camera.aspect = innerWidth / innerHeight;

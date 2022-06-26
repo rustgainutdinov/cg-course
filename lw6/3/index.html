@@ -3,86 +3,131 @@
 
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="styles.css" />
-    <script src="./index.mjs" type="module"></script>
     <title>Title</title>
 </head>
 
 <body>
-    <canvas id="canvas"></canvas>
+<canvas id="canvas"></canvas>
+<script src='src/three.js'></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.122.0/examples/js/controls/OrbitControls.min.js"></script>
 
-    <script id="vertShader" type="shader-code">
-        varying vec2 vUv;
-        uniform float uTime;
-        #define PI 3.14159265359
+<script id="vertex-shader" type="shader-code">
+    varying vec2 vUv;
+    uniform float uTime;
+    #define PI 3.14159265359
 
-        void setPosition(vec4 position) {
-            gl_Position = projectionMatrix * modelViewMatrix * position;
+    vec3 fromSpherical(float radius, float phi, float theta) {
+        float sinPhiRadius = sin( phi ) * radius;
+
+        float x = sinPhiRadius * sin( theta );
+        float y = cos( phi ) * radius;
+        float z = sinPhiRadius * cos( theta );
+
+        return vec3(x, y, z);
+    }
+
+    vec3 fromTorus(float radius, float tubeRadius, float phi, float theta) {
+        float cosThetaTubeRadius = cos( theta ) * tubeRadius;
+
+        float x = (radius + cosThetaTubeRadius) * cos(phi);
+        float y = (radius + cosThetaTubeRadius) * sin(phi);
+        float z = tubeRadius * sin(theta);
+
+        return vec3(x, y, z);
+    }
+
+    bool isReverse(float time, float timeToMorph) {
+        float index = floor(time / timeToMorph);
+        return (int(index) % 2) == 1;
+    }
+
+    void main() {
+        vUv = uv;
+
+        float phiTorus = (1.0 - uv.y) * 2.0 * PI;
+        float phiSphere = (1.0 - uv.y) * PI;
+        float theta = uv.x * PI * 2. + PI;
+        float r = 2.0;
+        float rTube = 1.0;
+        vec3 torusCoord = mix(position, fromTorus(r, rTube, phiTorus, theta), 1.0);
+        vec3 sphereCoord = mix(position, fromSpherical(r, phiSphere, theta), 1.0);
+        float timeToMorph = 10000.0;
+        vec3 result;
+        float time = uTime - (timeToMorph * floor(uTime / timeToMorph));
+        if (isReverse(uTime, timeToMorph)) {
+            result = mix(sphereCoord, torusCoord, time / timeToMorph);
+        } else {
+            result = mix(torusCoord, sphereCoord, time / timeToMorph);
         }
 
-        vec3 fromSpherical(float radius, float phi, float theta) {
-            float sinPhiRadius = sin( phi ) * radius;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(result.x, result.y, result.z, 0.25);
+    }
+</script>
 
-            float x = sinPhiRadius * sin( theta );
-            float y = cos( phi ) * radius;
-            float z = sinPhiRadius * cos( theta );
+<script id="fragment-shader" type="shader-code">
+   precision mediump float;
 
-            return vec3(x, y, z);
-        }
+    #define GOLD vec4(1.0, 0.86, 0.6, 1.0)
 
-        vec3 fromTorus(float radius, float tubeRadius, float phi, float theta) {
-            float cosThetaTubeRadius = cos( theta ) * tubeRadius;
+    void main() {
+        gl_FragColor = GOLD;
+    }
 
-            float x = (radius + cosThetaTubeRadius) * cos(phi);
-            float y = (radius + cosThetaTubeRadius) * sin(phi);
-            float z = tubeRadius * sin(theta);
+</script>
+<script>
+    let RENDERER, SCENE, CAMERA, CONTROLS, VERTEX_SHADER, FRAGMENT_SHADER, PLANE;
+    const START_SCRIPT_DATE = Date.now();
 
-            return vec3(x, y, z);
-        }
+    function init() {
 
-        bool isReverse(float time, float timeToMorph) {
-            float index = floor(time / timeToMorph);
-            return (int(index) % 2) == 1;
-        }
+        const canvas = document.getElementById('canvas')
 
-        float resetTime(float time, float timeToMorph) {
-            float index = floor(time / timeToMorph);
-            return (time - (timeToMorph * index));
-        }
+        canvas.setAttribute('width', `${window.innerWidth}`)
+        canvas.setAttribute('height', `${window.innerHeight}`)
 
-        void main() {
-            vUv = uv;
+        RENDERER = new THREE.WebGLRenderer({canvas})
 
-            float phiTorus = (1. - uv.y) * 2.0 * PI;
-            float phiSphere = (1. - uv.y) * PI;
-            float theta = uv.x * PI * 2. + PI;
-            float r = 1.;
-            float rTube = 0.5;
-            vec3 torusCoord = mix(position, fromTorus(r, rTube, phiTorus, theta), 1.0);
-            vec3 sphereCoord = mix(position, fromSpherical(r, phiSphere, theta), 1.0);
-            float timeToMorph = 1000.0;
-            vec3 result;
-            float time = resetTime(uTime, timeToMorph);
-            if (isReverse(uTime, timeToMorph)) {
-                result = mix(sphereCoord, torusCoord, time / timeToMorph);
-            } else {
-                result = mix(torusCoord, sphereCoord, time / timeToMorph);
-            }
+        SCENE = new THREE.Scene()
+        CAMERA = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000)
 
-            setPosition(vec4(result.x, result.y, result.z, 0.25));
-        }
-    </script>
+        CAMERA.position.set(10, 15, 10)
 
-    <script id="fragShader" type="shader-code">
+        CONTROLS = new THREE.OrbitControls(CAMERA, RENDERER.domElement)
+        CONTROLS.target.set(0, 0, 0)
+    }
+    init();
 
-        float convertRgb(float value) {
-            return value / 256.0;
-        }
+    function draw(){
+        const vertexShader = document.getElementById('vertex-shader').innerHTML
+        const fragmentShader = document.getElementById('fragment-shader').innerHTML
+        const geometry = new THREE.PlaneGeometry(2 * Math.PI, Math.PI, 25, 25)
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: {
+                    type: 'f',
+                    value: Date.now()
+                }
+            },
+            vertexShader,
+            fragmentShader,
+            side: THREE.DoubleSide,
+            wireframe: true,
+        })
+        PLANE = new THREE.Mesh(geometry, material)
+        SCENE.add(PLANE)
+    }
 
-        void main() {
-            gl_FragColor = vec4(convertRgb(14.0),convertRgb(209.0),convertRgb(20.0),1.0);
-        }
-    </script>
+    function animate() {
+        CONTROLS.update()
+        PLANE.material.uniforms.uTime.value = Date.now() - START_SCRIPT_DATE;
+        RENDERER.render(SCENE, CAMERA)
+        requestAnimationFrame(animate)
+    }
+
+    init();
+    draw();
+    animate()
+</script>
 </body>
 
 </html>

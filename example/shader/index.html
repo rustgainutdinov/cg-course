@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<canvas id='canvas'></canvas>
+
+<script id='vertex-shader' type='x-shader/x-vertex'>
+    void main() {
+        float r = (1.0 + sin(position.x)) * (1.0 + 0.9 * cos(8.0 * position.x)) * (1.0 + 0.1 * cos(24.0 * position.x)) * (0.5 + 0.05 * cos(140.0 * position.x));;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4( r * cos(position.x), r * sin(position.x), position.z, 1.0 );
+    }
+
+</script>
+
+<script id='fragment-shader' type='x-shader/x-fragment'>
+    precision mediump float;
+
+    #define GOLD vec4(1.0, 0.86, 0.6, 1.0)
+
+    void main() {
+        gl_FragColor = GOLD;
+    }
+
+</script>
+
+<script src='src/three.js'></script>
+<script>
+    const canvas = document.getElementById('canvas')
+
+    canvas.setAttribute('width', `${window.innerWidth}`)
+    canvas.setAttribute('height', `${window.innerHeight}`)
+
+    const renderer = new THREE.WebGLRenderer({canvas})
+    renderer.setClearColor(0xffffff, 0);
+    const scene = new THREE.Scene()
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000)
+
+    camera.position.set(0, 0, 5)
+
+    const vertexShader = document.getElementById('vertex-shader').innerHTML
+    const fragmentShader = document.getElementById("fragment-shader").innerHTML
+
+    const endPoint = 2 * Math.PI
+    const step = Math.PI / 1000
+
+    const stepIndex = Math.ceil(endPoint / step)
+    const vertices = []
+    for (let i = 0; i < stepIndex; i++) {
+        vertices.push([i * step, 0, 0])
+    }
+    const verticesFloat = new Float32Array(vertices.flat())
+
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.BufferAttribute(verticesFloat, 3));
+    const material = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+    })
+    const line = new THREE.Line(geometry, material)
+
+    scene.add(line)
+
+    renderer.render(scene, camera)
+</script>
+</body>
+</html>

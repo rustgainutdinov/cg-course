@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=utf-8>
+  <title>First Three.js app</title>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%
+    }
+  </style>
+</head>
+<body>
+<div id="container"></div>
+<script type="x-shader/x-vertex" id="vertexShader">
+        varying vec2 vUv;
+        varying vec3 color;
+        uniform float time;
+
+        void main() {
+            vUv = uv;
+            vec3 p = position;
+            float v = 2.0 * 3.141592765 * uv.y;
+            p.x = uv.x * cos(v);
+            p.y = uv.x * sin(v);
+            if (time < 3.0){
+                p.z = (p.x * p.x - p.y * p.y) / 2.0 * sin(time);
+            } else {
+                p.z = - (p.x * p.x + p.y * p.y) / 2.0 * sin(time);
+            }
+
+            color = vec3(p.x, p.y, p.z);
+
+            vec4 modelViewPosition = modelViewMatrix * vec4(p, 1.0);
+	          gl_Position = projectionMatrix * modelViewPosition;
+        }
+
+</script>
+<script id="fragment-shader" type="x-shader/x-fragment">
+        varying vec3 color;
+
+        void main() {
+            gl_FragColor = vec4(color, 1.0);
+        }
+</script>
+<script type="module">
+	import * as THREE from 'https://cdn.skypack.dev/three';
+	import {ParametricGeometry} from "https://cdn.skypack.dev/three@0.136.0/examples/jsm/geometries/ParametricGeometry";
+	let TIME = 0;
+
+	let width = window.innerWidth;
+	let height = window.innerHeight;
+	let container = document.getElementById("container");
+
+	let renderer = new THREE.WebGLRenderer();
+	renderer.setPixelRatio(window.devicePixelRatio);
+	renderer.setSize(width, height);
+	container.appendChild(renderer.domElement);
+
+
+	let camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight);
+	camera.position.z = 10;
+
+	let scene = new THREE.Scene();
+	scene.background = new THREE.Color(0xffffff);
+
+	const light = new THREE.AmbientLight(0xffffff);
+	scene.add(light);
+
+
+	let paraboloid = new ParametricGeometry(getParaboloidFunction(), 32, 32, false);
+
+	let material = new THREE.ShaderMaterial({
+		uniforms: {
+			time: {value: TIME}
+		},
+		fragmentShader: document.getElementById('fragment-shader').textContent,
+		vertexShader: document.getElementById('vertexShader').textContent,
+		side: THREE.DoubleSide
+	});
+
+	let paraboloidMesh = new THREE.Mesh(paraboloid, material);
+	paraboloidMesh.position.set(0, 0, 0);
+	scene.add(paraboloidMesh);
+	render();
+
+	function getParaboloidFunction() {
+		return function (u, v, target) {
+			v = 2 * Math.PI * v;
+			let x = u * Math.cos(v);
+			let y = u * Math.sin(v)
+			let z = (x * x + y * y) / 2;
+			target.set(x, y, z);
+		}
+	}
+
+	function render() {
+		requestAnimationFrame(render);
+		TIME += 0.005;
+
+		if(TIME >= 6.0) {
+			TIME = 0.0;
+		}
+
+		paraboloidMesh.material.uniforms.time.value = TIME;
+
+		renderer.render(scene, camera);
+	}
+
+</script>
+</body>
+</html>

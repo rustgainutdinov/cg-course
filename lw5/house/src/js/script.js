@@ -87,7 +87,7 @@ function drawWindows() {
 	drawWindow(-202, 150, 80, 0);
 }
 
-function drawWallsBlock(z, x, y, r, type = 0) {
+function drawWallsBlock(z, x, y, r, type = WALL_TYPES.SQUARE) {
 	const shape = new THREE.Shape();
 	if(type === WALL_TYPES.SQUARE) {
 		shape.moveTo(0, 0);

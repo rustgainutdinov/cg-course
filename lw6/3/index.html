@@ -16,50 +16,39 @@
     uniform float uTime;
     #define PI 3.14159265359
 
-    vec3 fromSpherical(float radius, float phi, float theta) {
-        float sinPhiRadius = sin( phi ) * radius;
-
-        float x = sinPhiRadius * sin( theta );
-        float y = cos( phi ) * radius;
-        float z = sinPhiRadius * cos( theta );
-
-        return vec3(x, y, z);
-    }
-
-    vec3 fromTorus(float radius, float tubeRadius, float phi, float theta) {
+    vec3 getTorPoint(float radius, float tubeRadius, float phi, float theta) {
         float cosThetaTubeRadius = cos( theta ) * tubeRadius;
-
         float x = (radius + cosThetaTubeRadius) * cos(phi);
         float y = (radius + cosThetaTubeRadius) * sin(phi);
         float z = tubeRadius * sin(theta);
-
         return vec3(x, y, z);
     }
 
-    bool isReverse(float time, float timeToMorph) {
-        float index = floor(time / timeToMorph);
-        return (int(index) % 2) == 1;
+    vec3 getSphericalPoint(float radius, float phi, float theta) {
+        float sinPhiRadius = sin( phi ) * radius;
+        float x = sinPhiRadius * sin( theta );
+        float y = cos( phi ) * radius;
+        float z = sinPhiRadius * cos( theta );
+        return vec3(x, y, z);
     }
 
     void main() {
         vUv = uv;
-
         float phiTorus = (1.0 - uv.y) * 2.0 * PI;
         float phiSphere = (1.0 - uv.y) * PI;
         float theta = uv.x * PI * 2. + PI;
         float r = 2.0;
         float rTube = 1.0;
-        vec3 torusCoord = mix(position, fromTorus(r, rTube, phiTorus, theta), 1.0);
-        vec3 sphereCoord = mix(position, fromSpherical(r, phiSphere, theta), 1.0);
+        vec3 torPoint = mix(position, getTorPoint(r, rTube, phiTorus, theta), 1.0);
+        vec3 spherePoint = mix(position, getSphericalPoint(r, phiSphere, theta), 1.0);
         float timeToMorph = 10000.0;
         vec3 result;
         float time = uTime - (timeToMorph * floor(uTime / timeToMorph));
-        if (isReverse(uTime, timeToMorph)) {
-            result = mix(sphereCoord, torusCoord, time / timeToMorph);
+        if ((int(floor(uTime / timeToMorph)) % 2) == 1) {
+            result = mix(spherePoint, torPoint, time / timeToMorph);
         } else {
-            result = mix(torusCoord, sphereCoord, time / timeToMorph);
+            result = mix(torPoint, spherePoint, time / timeToMorph);
         }
-
         gl_Position = projectionMatrix * modelViewMatrix * vec4(result.x, result.y, result.z, 0.25);
     }
 </script>
@@ -75,7 +64,7 @@
 
 </script>
 <script>
-    let RENDERER, SCENE, CAMERA, CONTROLS, VERTEX_SHADER, FRAGMENT_SHADER, PLANE;
+    let RENDERER, SCENE, CAMERA, CONTROLS, PLANE;
     const START_SCRIPT_DATE = Date.now();
 
     function init() {

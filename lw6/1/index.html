@@ -26,7 +26,7 @@
 
 <script src='src/three.js'></script>
 <script>
-    let SCENE, CAMERA, VERTEX_SHADER, FRAGMENT_SHADER;
+    let SCENE, CAMERA, RENDERER;
 
     function init() {
         const canvas = document.getElementById('canvas')
@@ -34,18 +34,17 @@
         canvas.setAttribute('width', `${window.innerWidth}`)
         canvas.setAttribute('height', `${window.innerHeight}`)
 
-        const renderer = new THREE.WebGLRenderer({canvas})
-        renderer.setClearColor(0xffffff, 0);
+        RENDERER = new THREE.WebGLRenderer({canvas})
+	      RENDERER.setClearColor(0xffffff, 0);
         SCENE = new THREE.Scene()
         CAMERA = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000)
 
         CAMERA.position.set(0, 0, 5)
-
-        VERTEX_SHADER = document.getElementById('vertex-shader').innerHTML
-        FRAGMENT_SHADER = document.getElementById("fragment-shader").innerHTML
     }
 
     function draw() {
+	      const vertexShader = document.getElementById('vertex-shader').innerHTML
+	      const fragmentShader = document.getElementById("fragment-shader").innerHTML
         const endPoint = 2 * Math.PI
         const step = Math.PI / 1000
 
@@ -59,9 +58,9 @@
         const geometry = new THREE.BufferGeometry()
         geometry.setAttribute('position', new THREE.BufferAttribute(verticesFloat, 3));
         const material = new THREE.ShaderMaterial({
-            VERTEX_SHADER,
-            FRAGMENT_SHADER,
-        })
+	        vertexShader: vertexShader,
+	        fragmentShader: fragmentShader,
+        });
         const line = new THREE.Line(geometry, material)
 
         SCENE.add(line)
@@ -69,7 +68,7 @@
 
     init();
     draw();
-    renderer.render(SCENE, CAMERA)
+    RENDERER.render(SCENE, CAMERA)
 </script>
 </body>
 </html>
